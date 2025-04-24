@@ -1,0 +1,34 @@
+{
+	"name": "signinwith",
+	"version": "1.0.0",
+	"description": "Simple and straightforward library for sign in / sign up with thirdparty oAuth services like Google, Meta, Apple...",
+	"main": "index.js",
+	"scripts": {
+	},
+	"type": "module",
+	"exports": {
+		".": "./index.js",
+		"./react": "./react.jsx"
+	},
+	"keywords": [
+		"signinwith",
+		"sign",
+		"in",
+		"oauth",
+		"authjs",
+		"authentication",
+		"login",
+		"clerk",
+		"auth",
+		"auth0",
+		"meta",
+		"webauthn"
+	],
+	"author": "ybouane",
+	"license": "ISC",
+	"dependencies": {
+		"apple-signin-auth": "^2.0.0",
+		"google-auth-library": "^9.15.1",
+		"react": "^19.1.0"
+	}
+}
