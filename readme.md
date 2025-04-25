@@ -1,10 +1,10 @@
 # Sign In With
 
-A simple and straightforward library for adding "Sign in with..." buttons (Google, Meta/Facebook, Apple) to your web application, handling both the frontend UI (React) and backend verification.
+A simple and straightforward library for adding "Sign in with..." buttons (Google, Facebook/Meta, Apple) to your web application, handling both the frontend UI (React) and backend verification.
 
 ## Features
 
-*   Easy integration for Google, Meta (Facebook), and Apple sign-in.
+*   Easy integration for Google, Facebook (Meta), and Apple sign-in.
 *   React components for the frontend buttons.
 *   Backend utility functions to verify the identity tokens/access tokens.
 *   Basic customizable styling.
@@ -76,7 +76,7 @@ export default App;
 ### Props for `SignInWith`
 
 *   `services` (Object, required): An object where keys are the service names (`google`, `meta`, `apple`) and values are their respective configuration objects.
-*   `onSignin` (Function, required): A callback function that receives `(serviceName, data)` when a sign-in attempt is successful on the client-side. `data` contains the necessary information (e.g., `credential` for Google, `accessToken` for Meta, `authorization` object for Apple) to be sent to your backend for verification.
+*   `onSignin` (Function, required): A callback function that receives `(serviceName, data)` when a sign-in attempt is successful on the client-side. `data` contains the necessary information (e.g., `credential` for Google, `accessToken` for Facebook, `authorization` object for Apple) to be sent to your backend for verification.
 
 ## Backend Verification
 
@@ -96,8 +96,8 @@ const servicesConfig = {
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID,
   },
-  meta: {
-    // Meta verification only needs the access token from the frontend
+  facebook: {
+    // Facebook verification only needs the access token from the frontend
     // No specific backend config needed here for the library function itself
     // but you might need App ID/Secret for other Graph API calls.
   },
@@ -145,7 +145,7 @@ The main `verifySignin` function delegates to service-specific functions:
 *   `verifySigninGoogle(config, verificationData)`: Verifies Google ID token.
     *   `config`: Needs `{ clientId }`.
     *   `verificationData`: Needs `{ credential }`.
-*   `verifySigninMeta(config, verificationData)`: Verifies Meta access token by fetching user email.
+*   `verifySigninFacebook(config, verificationData)`: Verifies Facebook access token by fetching user email.
     *   `config`: Not directly used by the function, but you need your App ID configured on the frontend.
     *   `verificationData`: Needs `{ accessToken }`.
 *   `verifySigninApple(config, verificationData)`: Verifies Apple ID token.
@@ -171,8 +171,8 @@ You can override these styles in your own CSS. The container in the example uses
     *   Add your domain(s) to "Authorized JavaScript origins".
     *   Add your backend callback URL (if applicable) to "Authorized redirect URIs".
     *   Get your **Client ID**.
-*   **Meta (Facebook):**
-    *   Create an App at [Meta for Developers](https://developers.facebook.com/).
+*   **Facebook (Meta):**
+    *   Create an App at [Facebook for Developers](https://developers.facebook.com/).
     *   Set up "Facebook Login for Business".
     *   Add your domain(s) to the App Domains and Site URL in the app settings.
     *   Get your **App ID**.
