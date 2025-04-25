@@ -114,7 +114,7 @@ export function SignInWithApple({ service, onSignin, onError }) {
 // Main SignInWith Component
 export default function SignInWith({ onSignin, onError, services, theme = 'light' }) {
 	return (
-		<div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+		<div className={`signinwith-container signinwith-theme-${theme}`}>
 			{Object.entries(services).map(([key, config]) => {
 				if (key === 'google') return <SignInWithGoogle key={key} service={config} onSignin={onSignin} onError={onError} />;
 				if (key === 'facebook') return <SignInWithFacebook key={key} service={config} onSignin={onSignin} onError={onError} />;
