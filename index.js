@@ -5,7 +5,7 @@ export const verifySigninGoogle = async (config, verificationData) => {
 	return payload.email ? { success: true, email: payload.email } : { success: false, error: 'Email not found' };
 };
 
-export const verifySigninMeta = async (config, verificationData) => {
+export const verifySigninFacebook = async (config, verificationData) => {
 	const res = await fetch(`https://graph.facebook.com/me?fields=email&access_token=${verificationData.accessToken}`);
 	const profile = await res.json();
 	return profile.email ? { success: true, email: profile.email } : { success: false, error: 'Email not available from Facebook' };
@@ -37,7 +37,7 @@ export const verifySigninDiscord = async (config, verificationData) => {
 export default async function verifySignin (services, service, verificationData) {
 	try {
 		if (services.google && service === 'google') return await verifySigninGoogle(services.google, verificationData);
-		if (services.facebook && service === 'facebook') return await verifySigninMeta(services.facebook, verificationData);
+		if (services.facebook && service === 'facebook') return await verifySigninFacebook(services.facebook, verificationData);
 		if (services.apple && service === 'apple') return await verifySigninApple(services.apple, verificationData);
 		if (services.discord && service === 'discord') return await verifySigninDiscord(services.discord, verificationData);
 		return { success: false, error: 'Unsupported service' };
