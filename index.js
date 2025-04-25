@@ -25,6 +25,22 @@ export const verifySigninApple = async (config, verificationData) => {
 	return result.email ? { success: true, email: result.email } : { success: false, error: 'Email not available from Apple' };
 };
 export const verifySigninDiscord = async (config, verificationData) => {
+	const tokenResponse = await fetch('https://discord.com/api/v10/oauth2/token', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+			body: new URLSearchParams({
+				client_id: config.clientId,
+				client_secret: config.clientSecret,
+				code: verificationData.code,
+				grant_type: 'authorization_code',
+				redirect_uri: config.redirectUri,
+				scope: 'identity email',
+			}),
+		});
+		const token = await tokenResponse.json();
+		verificationData.accessToken = token.access_token;
 	const res = await fetch('https://discord.com/api/v10/users/@me', {
 		headers: {
 			authorization: `Bearer ${verificationData.accessToken}`,
