@@ -37,7 +37,7 @@ export const verifySigninDiscord = async (config, verificationData) => {
 export default async function verifySignin (services, service, verificationData) {
 	try {
 		if (services.google && service === 'google') return await verifySigninGoogle(services.google, verificationData);
-		if (services.meta && service === 'meta') return await verifySigninMeta(services.meta, verificationData);
+		if (services.facebook && service === 'facebook') return await verifySigninMeta(services.facebook, verificationData);
 		if (services.apple && service === 'apple') return await verifySigninApple(services.apple, verificationData);
 		if (services.discord && service === 'discord') return await verifySigninDiscord(services.discord, verificationData);
 		return { success: false, error: 'Unsupported service' };
