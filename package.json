@@ -1,6 +1,6 @@
 {
 	"name": "signinwith",
-	"version": "1.0.9",
+	"version": "1.0.10",
 	"description": "Simple and straightforward library for sign in / sign up with thirdparty oAuth services like Google, Meta, Apple, Discord...",
 	"main": "index.js",
 	"scripts": {
@@ -31,6 +31,6 @@
 	"dependencies": {
 	},
 	"peerDependencies": {
-		"react": "^18"
+		"react": "*"
 	}
 }
