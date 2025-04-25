@@ -18,7 +18,7 @@
 		text-decoration: none;
 		align-self: stretch;
 		box-sizing: border-box;
-		transition: background-color 0.3s ease, border-color 0.3s ease;
+		transition: opacity 0.3s ease;
 		color: #3c4043;
 		background-color: #ffffff;
 	
@@ -30,15 +30,26 @@
 	
 		&:hover {
 			background-color: #f8f9fa;
+			opacity:0.9;
 		}
 	
 		&.signinwith-button-facebook {
 			background-color: #1877F2;
 			color: white;
-			border-color: #0866ff;
+			border-color: #1877F2;
 	
 			&:hover {
-				background-color: #0866ff;
+				background-color: #1877F2;
+			}
+		}
+
+		&.signinwith-button-discord {
+			background-color: #5d67f7;
+			color: white;
+			border-color: #5d67f7;
+	
+			&:hover {
+				background-color: #5d67f7;
 			}
 		}
 	
