@@ -248,3 +248,8 @@ For Discord and Apple, the `redirectUri` in the frontend configuration should po
 ```
 
 This HTML file extracts the authorization code (or error) from the URL hash and sends it back to the main window using `postMessage`.  The main application needs to listen for this message and then proceed with the backend verification.  This approach is necessary because Discord's OAuth flow, when initiated in a popup, requires a way to pass the authorization code back to the originating window.
+
+Note: you can import this page as a string (to then return it as a response from your server) via:
+```javascript
+import htmlContent from 'signinwith/redirect-oauth.html?raw';
+```
