@@ -65,7 +65,7 @@ function App() {
   return (
     <div className="signinwith-container">
       <h2>Sign In</h2>
-      <SignInWith services={services} onSignin={handleSignin} />
+      <SignInWith services={services} onSignin={handleSignin}  onError={error=>console.error(error)} />
     </div>
   );
 }
@@ -77,6 +77,7 @@ export default App;
 
 *   `services` (Object, required): An object where keys are the service names (`google`, `meta`, `apple`) and values are their respective configuration objects.
 *   `onSignin` (Function, required): A callback function that receives `(serviceName, data)` when a sign-in attempt is successful on the client-side. `data` contains the necessary information (e.g., `credential` for Google, `accessToken` for Facebook, `authorization` object for Apple) to be sent to your backend for verification.
+*   `onError` (Function, optional): A callback function that receives an error string if there's an issue during the sign-in process.
 
 ## Backend Verification
 

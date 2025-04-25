@@ -13,7 +13,7 @@ const AppleIcon = () => (
 );
 
 // Subcomponent: Facebook (Facebook)
-export function SignInWithFacebook({ service, onSignin }) {
+export function SignInWithFacebook({ service, onSignin, onError }) {
 	useEffect(() => {
 		if (!window.FB) {
 			window.fbAsyncInit = function () {
@@ -48,7 +48,7 @@ export function SignInWithFacebook({ service, onSignin }) {
 	return <button className="signinwith-button signinwith-button-facebook" onClick={handleLogin}><FacebookIcon />Continue with Facebook</button>;
 }
 // Subcomponent: Google
-export function SignInWithGoogle({ service, onSignin }) {
+export function SignInWithGoogle({ service, onSignin, onError }) {
 	useEffect(() => {
 		const script = document.createElement('script');
 		script.src = 'https://accounts.google.com/gsi/client';
@@ -86,7 +86,7 @@ export function SignInWithGoogle({ service, onSignin }) {
 }
 
 // Subcomponent: Apple
-export function SignInWithApple({ service, onSignin }) {
+export function SignInWithApple({ service, onSignin, onError }) {
 	useEffect(() => {
 		const script = document.createElement('script');
 		script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
@@ -112,13 +112,13 @@ export function SignInWithApple({ service, onSignin }) {
 }
 
 // Main SignInWith Component
-export default function SignInWith({ onSignin, services, theme = 'light' }) {
+export default function SignInWith({ onSignin, onError, services, theme = 'light' }) {
 	return (
 		<div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
 			{Object.entries(services).map(([key, config]) => {
-				if (key === 'google') return <SignInWithGoogle key={key} service={config} onSignin={onSignin} />;
-				if (key === 'facebook') return <SignInWithFacebook key={key} service={config} onSignin={onSignin} />;
-				if (key === 'apple') return <SignInWithApple key={key} service={config} onSignin={onSignin} />;
+				if (key === 'google') return <SignInWithGoogle key={key} service={config} onSignin={onSignin} onError={onError} />;
+				if (key === 'facebook') return <SignInWithFacebook key={key} service={config} onSignin={onSignin} onError={onError} />;
+				if (key === 'apple') return <SignInWithApple key={key} service={config} onSignin={onSignin} onError={onError} />;
 				return null;
 			})}
 		</div>
