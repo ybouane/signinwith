@@ -25,25 +25,27 @@ export const verifySigninApple = async (config, verificationData) => {
 	return result.email ? { success: true, email: result.email } : { success: false, error: 'Email not available from Apple' };
 };
 export const verifySigninDiscord = async (config, verificationData) => {
+	const params = new URLSearchParams();
+	params.append('grant_type', 'authorization_code');
+	params.append('code', verificationData.code);
+	params.append('redirect_uri', config.redirectUri);
+
 	const tokenResponse = await fetch('https://discord.com/api/v10/oauth2/token', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded',
-			},
-			body: new URLSearchParams({
-				client_id: config.clientId,
-				client_secret: config.clientSecret,
-				code: verificationData.code,
-				grant_type: 'authorization_code',
-				redirect_uri: config.redirectUri,
-				scope: 'identity email',
-			}),
-		});
-		const token = await tokenResponse.json();
-		verificationData.accessToken = token.access_token;
+		method: 'POST',
+		body: params,
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+			'Authorization': `Basic ${btoa(`${config.clientId}:${config.clientSecret}`)}`
+		},
+	});
+	const token = await tokenResponse.json();
+	if (!tokenResponse.ok) {
+		return { success: false, error: token.error_description || 'Failed to exchange Discord code for token' };
+	}
+	const accessToken = token.access_token;
 	const res = await fetch('https://discord.com/api/v10/users/@me', {
 		headers: {
-			authorization: `Bearer ${verificationData.accessToken}`,
+			authorization: `Bearer ${accessToken}`,
 		},
 	});
 	const profile = await res.json();
