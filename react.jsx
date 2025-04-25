@@ -57,6 +57,7 @@ export function SignInWithGoogle({ service, onSignin, onError }) {
 		script.onload = () => {
 			window.google.accounts.id.initialize({
 				client_id: service.clientId,
+				use_fedcm_for_prompt: true,
 				callback: (res) => {
 					onSignin('google', { credential: res.credential });
 				}
@@ -75,6 +76,8 @@ export function SignInWithGoogle({ service, onSignin, onError }) {
 	const handleGoogleLogin = (e) => {
 		e.stopPropagation();
 		e.preventDefault();
+		window.google.accounts.id.prompt((notification) => {
+			onError?.(notification.getDismissedReason() || 'Sign-in with Google failed.');
 		});
 	};
 
