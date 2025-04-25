@@ -12,7 +12,8 @@ const AppleIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="814" height="1000"><path fill="#FFFFFF" d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76.5 0-103.7 40.8-165.9 40.8s-105.6-57-155.5-127C46.7 790.7 0 663 0 541.8c0-194.4 126.4-297.5 250.8-297.5 66.1 0 121.2 43.4 162.7 43.4 39.5 0 101.1-46 176.3-46 28.5 0 130.9 2.6 198.3 99.2zm-234-181.5c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z"/></svg>
 );
 
-// Subcomponent: Facebook (Facebook)
+
+// Subcomponent: Facebook
 export function SignInWithFacebook({ service, onSignin, onError }) {
 	useEffect(() => {
 		if (!window.FB) {
@@ -41,20 +42,46 @@ export function SignInWithFacebook({ service, onSignin, onError }) {
 		window.FB.login(function (response) {
 			if (response.authResponse) {
 				onSignin('facebook', { accessToken: response.authResponse.accessToken });
+			} else {
+				onError?.('Failed to log in with Facebook.');
 			}
 		}, { scope: 'email,public_profile' });
 	};
 
 	return <button className="signinwith-button signinwith-button-facebook" onClick={handleLogin}><FacebookIcon />Continue with Facebook</button>;
 }
+
 // Subcomponent: Google
 export function SignInWithGoogle({ service, onSignin, onError }) {
 	useEffect(() => {
-		const script = document.createElement('script');
-		script.src = 'https://accounts.google.com/gsi/client';
-		script.async = true;
-		script.defer = true;
-		script.onload = () => {
+		const scriptId = 'google-gsi-script';
+		let script = document.getElementById(scriptId);
+
+		if (!script) {
+			script = document.createElement('script');
+			script.id = scriptId;
+			script.src = 'https://accounts.google.com/gsi/client';
+			script.async = true;
+			script.defer = true;
+			script.onload = () => {
+				if (window.google?.accounts?.id) {
+					window.google.accounts.id.initialize({
+						client_id: service.clientId,
+						use_fedcm_for_prompt: true,
+						callback: (res) => {
+							onSignin('google', { credential: res.credential });
+						}
+					});
+				} else {
+					onError?.('Google Sign-In script loaded but initialization failed.');
+				}
+			};
+			script.onerror = () => {
+				onError?.('Failed to load Google Sign-In script.');
+			};
+			document.body.appendChild(script);
+		} else if (window.google?.accounts?.id) {
+			// If script already exists, ensure it's initialized (might be needed if component remounts)
 			window.google.accounts.id.initialize({
 				client_id: service.clientId,
 				use_fedcm_for_prompt: true,
@@ -62,23 +89,33 @@ export function SignInWithGoogle({ service, onSignin, onError }) {
 					onSignin('google', { credential: res.credential });
 				}
 			});
-		};
-		document.body.appendChild(script);
+		}
 
+
+		// Cleanup function does not remove the script to allow multiple instances
+		// or remounts without reloading. Google's script handles this internally.
 		return () => {
-			const scriptTag = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
-			if (scriptTag) {
-				document.body.removeChild(scriptTag);
-			}
+			// Optional: You might want to hide the prompt if the component unmounts
+			// window.google?.accounts?.id?.cancel();
 		};
-	}, [service.clientId]);
+	}, [service.clientId, onSignin, onError]);
 
 	const handleGoogleLogin = (e) => {
 		e.stopPropagation();
 		e.preventDefault();
-		window.google.accounts.id.prompt((notification) => {
-			onError?.(notification.getDismissedReason() || 'Sign-in with Google failed.');
-		});
+		if (window.google?.accounts?.id) {
+			window.google.accounts.id.prompt((notification) => {
+				// Handle prompt UI notifications (e.g., closed, error)
+				if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+					// Potentially trigger a backup UX or just log
+					onError?.(notification.getNotDisplayedReason() || notification.getSkippedReason() || 'Google Sign-In prompt was not displayed or was skipped.');
+				} else if (notification.isDismissedMoment()) {
+					onError?.(notification.getDismissedReason() || 'Google Sign-In prompt was dismissed.');
+				}
+			});
+		} else {
+			onError?.('Google Sign-In is not initialized.');
+		}
 	};
 
 	return (
@@ -91,25 +128,74 @@ export function SignInWithGoogle({ service, onSignin, onError }) {
 // Subcomponent: Apple
 export function SignInWithApple({ service, onSignin, onError }) {
 	useEffect(() => {
-		const script = document.createElement('script');
-		script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
-		script.onload = () => {
-			window.AppleID.auth.init({
-				clientId: service.clientId,
-				scope: 'email name',
-				redirectURI: window.location.origin + '/auth/apple/callback',
-				usePopup: true,
-			});
-			window.addEventListener('AppleIDSignInOnSuccess', (e) => {
-				onSignin('apple', e.detail.authorization);
-			});
+		const scriptId = 'apple-auth-script';
+		let script = document.getElementById(scriptId);
+
+		const handleAppleSignInSuccess = (event) => {
+			onSignin('apple', event.detail.authorization);
 		};
-		document.body.appendChild(script);
-	}, [service.clientId]);
-	const handleAppleLogin = (e) => {
+		const handleAppleSignInFailure = (event) => {
+			onError?.(event.detail.error || 'Sign in with Apple failed.');
+		};
+
+		if (!script) {
+			script = document.createElement('script');
+			script.id = scriptId;
+			script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+			script.async = true;
+			script.defer = true;
+			script.onload = () => {
+				try {
+					window.AppleID.auth.init({
+						clientId: service.clientId,
+						scope: service.scope || 'email name', // Default scope
+						redirectURI: service.redirectUri || window.location.origin, // Default redirect URI
+						usePopup: service.usePopup !== undefined ? service.usePopup : true, // Default to popup
+					});
+				} catch (error) {
+					console.error("Apple Sign In initialization failed:", error);
+					onError?.('Failed to initialize Apple Sign In.');
+					return; // Stop if init fails
+				}
+
+				// Add event listeners after successful initialization
+				document.addEventListener('AppleIDSignInOnSuccess', handleAppleSignInSuccess);
+				document.addEventListener('AppleIDSignInOnFailure', handleAppleSignInFailure);
+			};
+			script.onerror = () => {
+				onError?.('Failed to load Apple Sign In script.');
+			};
+			document.body.appendChild(script);
+		} else {
+			// If script exists, re-add listeners in case component remounted
+			document.removeEventListener('AppleIDSignInOnSuccess', handleAppleSignInSuccess);
+			document.removeEventListener('AppleIDSignInOnFailure', handleAppleSignInFailure);
+			document.addEventListener('AppleIDSignInOnSuccess', handleAppleSignInSuccess);
+			document.addEventListener('AppleIDSignInOnFailure', handleAppleSignInFailure);
+		}
+
+		return () => {
+			// Cleanup listeners when component unmounts
+			document.removeEventListener('AppleIDSignInOnSuccess', handleAppleSignInSuccess);
+			document.removeEventListener('AppleIDSignInOnFailure', handleAppleSignInFailure);
+		};
+	}, [service.clientId, service.scope, service.redirectUri, service.usePopup, onSignin, onError]);
+
+	const handleAppleLogin = async (e) => {
 		e.stopPropagation();
 		e.preventDefault();
-		window.AppleID.auth.signIn();
+		try {
+			if (window.AppleID?.auth) {
+				await window.AppleID.auth.signIn();
+			} else {
+				onError?.('Apple Sign In is not initialized.');
+			}
+		} catch (error) {
+			// This catch might handle errors from the signIn() call itself,
+			// though the event listener is the primary mechanism.
+			console.error("Apple Sign In error:", error);
+			onError?.('An error occurred during Apple Sign In.');
+		}
 	};
 	return <button className="signinwith-button signinwith-button-apple" onClick={handleAppleLogin}><AppleIcon />Continue with Apple</button>;
 }
