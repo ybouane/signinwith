@@ -12,6 +12,10 @@ const AppleIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="814" height="1000"><path fill="#FFFFFF" d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76.5 0-103.7 40.8-165.9 40.8s-105.6-57-155.5-127C46.7 790.7 0 663 0 541.8c0-194.4 126.4-297.5 250.8-297.5 66.1 0 121.2 43.4 162.7 43.4 39.5 0 101.1-46 176.3-46 28.5 0 130.9 2.6 198.3 99.2zm-234-181.5c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z"/></svg>
 );
 
+// Subcomponent: Discord Icon
+const DiscordIcon = () => (
+	<svg viewBox="0 -28.5 256 256" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid"><path d="M216.856 16.597A208.502 208.502 0 0 0 164.042 0c-2.275 4.113-4.933 9.645-6.766 14.046-19.692-2.961-39.203-2.961-58.533 0-1.832-4.4-4.55-9.933-6.846-14.046a207.809 207.809 0 0 0-52.855 16.638C5.618 67.147-3.443 116.4 1.087 164.956c22.169 16.555 43.653 26.612 64.775 33.193A161.094 161.094 0 0 0 79.735 175.3a136.413 136.413 0 0 1-21.846-10.632 108.636 108.636 0 0 0 5.356-4.237c42.122 19.702 87.89 19.702 129.51 0a131.66 131.66 0 0 0 5.355 4.237 136.07 136.07 0 0 1-21.886 10.653c4.006 8.02 8.638 15.67 13.873 22.848 21.142-6.58 42.646-16.637 64.815-33.213 5.316-56.288-9.08-105.09-38.056-148.36ZM85.474 135.095c-12.645 0-23.015-11.805-23.015-26.18s10.149-26.2 23.015-26.2c12.867 0 23.236 11.804 23.015 26.2.02 14.375-10.148 26.18-23.015 26.18Zm85.051 0c-12.645 0-23.014-11.805-23.014-26.18s10.148-26.2 23.014-26.2c12.867 0 23.236 11.804 23.015 26.2 0 14.375-10.148 26.18-23.015 26.18Z" fill="#FFFFFF"/></svg>
+);
 
 // Subcomponent: Facebook
 export function SignInWithFacebook({ service, onSignin, onError }) {
@@ -149,15 +153,14 @@ export function SignInWithApple({ service, onSignin, onError }) {
 					window.AppleID.auth.init({
 						clientId: service.clientId,
 						scope: service.scope || 'email name', // Default scope
-						redirectURI: service.redirectUri || window.location.origin, // Default redirect URI
-						usePopup: service.usePopup !== undefined ? service.usePopup : true, // Default to popup
+						redirectURI: service.redirectUri, // Default redirect URI
+						usePopup: true,
 					});
 				} catch (error) {
 					console.error("Apple Sign In initialization failed:", error);
 					onError?.('Failed to initialize Apple Sign In.');
 					return; // Stop if init fails
 				}
-
 				// Add event listeners after successful initialization
 				document.addEventListener('AppleIDSignInOnSuccess', handleAppleSignInSuccess);
 				document.addEventListener('AppleIDSignInOnFailure', handleAppleSignInFailure);
@@ -200,15 +203,85 @@ export function SignInWithApple({ service, onSignin, onError }) {
 	return <button className="signinwith-button signinwith-button-apple" onClick={handleAppleLogin}><AppleIcon />Continue with Apple</button>;
 }
 
+// Subcomponent: Discord
+export function SignInWithDiscord({ service, onSignin, onError }) {
+	const handleDiscordLogin = (e) => {
+		e.stopPropagation();
+		e.preventDefault();
+
+		const { clientId, redirectUri, scope = 'identify email' } = service; // Default scopes
+
+		if (!clientId || !redirectUri) {
+			console.error("Discord service configuration missing clientId or redirectUri.");
+			onError?.("Discord configuration is incomplete.");
+			return;
+		}
+
+		try {
+			const params = new URLSearchParams({
+				client_id: clientId,
+				redirect_uri: redirectUri,
+				response_type: 'code',
+				scope: scope,
+			});
+
+			const discordAuthUrl = `https://discord.com/api/oauth2/authorize?${params.toString()}`;
+
+			window.open(discordAuthUrl);
+		} catch (error) {
+			console.error("Failed to initiate Discord login:", error);
+			onError?.("Failed to initiate Discord login.");
+		}
+	};
+	useEffect(() => {
+		const handleMessage = (event) => {
+			if (event.origin !== window.location.origin) {
+				return; // Only accept messages from the same origin
+			}
+			if (event.data && event.data.type === 'discordAuth') {
+				if (event.data.code) {
+					onSignin('discord', { code: event.data.code });
+				} else if (event.data.error) {
+					onError?.(`Discord login error: ${event.data.error}`);
+				} else {
+					onError?.('Unknown Discord login error.');
+				}
+			}
+		};
+		window.addEventListener('message', handleMessage);
+		return () => {
+			window.removeEventListener('message', handleMessage);
+		};
+	}, [onSignin, onError]);
+
+	return (
+		<button className="signinwith-button signinwith-button-discord" onClick={handleDiscordLogin}>
+			<DiscordIcon />Continue with Discord
+		</button>
+	);
+}
+
+
 // Main SignInWith Component
 export default function SignInWith({ onSignin, onError, services, theme = 'light' }) {
 	return (
 		<div className={`signinwith-container signinwith-theme-${theme}`}>
-			{Object.entries(services).map(([key, config]) => {
-				if (key === 'google') return <SignInWithGoogle key={key} service={config} onSignin={onSignin} onError={onError} />;
-				if (key === 'facebook') return <SignInWithFacebook key={key} service={config} onSignin={onSignin} onError={onError} />;
-				if (key === 'apple') return <SignInWithApple key={key} service={config} onSignin={onSignin} onError={onError} />;
-				return null;
+			{Object.entries(services || {}).map(([key, config]) => { // Added default {} for services
+				if (!config) return null; // Skip if config is null/undefined
+
+				switch (key.toLowerCase()) { // Use lowercase key for case-insensitivity
+					case 'google':
+						return <SignInWithGoogle key={key} service={config} onSignin={onSignin} onError={onError} />;
+					case 'facebook':
+						return <SignInWithFacebook key={key} service={config} onSignin={onSignin} onError={onError} />;
+					case 'apple':
+						return <SignInWithApple key={key} service={config} onSignin={onSignin} onError={onError} />;
+					case 'discord':
+						return <SignInWithDiscord key={key} service={config} onSignin={onSignin} onError={onError} />;
+					default:
+						console.warn(`Unsupported service key: ${key}`);
+						return null;
+				}
 			})}
 		</div>
 	);

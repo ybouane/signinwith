@@ -24,12 +24,22 @@ export const verifySigninApple = async (config, verificationData) => {
 	if (!result.success) return { success: false, error: result.error || 'Invalid Apple signin' };
 	return result.email ? { success: true, email: result.email } : { success: false, error: 'Email not available from Apple' };
 };
+export const verifySigninDiscord = async (config, verificationData) => {
+	const res = await fetch('https://discord.com/api/v10/users/@me', {
+		headers: {
+			authorization: `Bearer ${verificationData.accessToken}`,
+		},
+	});
+	const profile = await res.json();
+	return profile.email ? { success: true, email: profile.email } : { success: false, error: 'Email not available from Discord' };
+};
 
 export default verifySignin = async (services, service, verificationData) => {
 	try {
-		if (service === 'google') return await verifySigninGoogle(services.google, verificationData);
-		if (service === 'meta') return await verifySigninMeta(services.meta, verificationData);
-		if (service === 'apple') return await verifySigninApple(services.apple, verificationData);
+		if (services.google && service === 'google') return await verifySigninGoogle(services.google, verificationData);
+		if (services.meta && service === 'meta') return await verifySigninMeta(services.meta, verificationData);
+		if (services.apple && service === 'apple') return await verifySigninApple(services.apple, verificationData);
+		if (services.discord && service === 'discord') return await verifySigninDiscord(services.discord, verificationData);
 		return { success: false, error: 'Unsupported service' };
 	} catch (err) {
 		return { success: false, error: err.message || 'Unknown error' };
