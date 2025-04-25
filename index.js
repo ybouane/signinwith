@@ -34,7 +34,7 @@ export const verifySigninDiscord = async (config, verificationData) => {
 	return profile.email ? { success: true, email: profile.email } : { success: false, error: 'Email not available from Discord' };
 };
 
-export default verifySignin = async (services, service, verificationData) => {
+export default async function verifySignin (services, service, verificationData) {
 	try {
 		if (services.google && service === 'google') return await verifySigninGoogle(services.google, verificationData);
 		if (services.meta && service === 'meta') return await verifySigninMeta(services.meta, verificationData);
