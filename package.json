@@ -28,8 +28,6 @@
 	"author": "ybouane",
 	"license": "ISC",
 	"dependencies": {
-		"apple-signin-auth": "^2.0.0",
-		"google-auth-library": "^9.15.1",
 		"react": "^19.1.0"
 	}
 }

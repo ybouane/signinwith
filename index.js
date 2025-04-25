@@ -1,13 +1,7 @@
-import { OAuth2Client } from 'google-auth-library';
-import appleSigninAuth from 'apple-signin-auth';
-
 export const verifySigninGoogle = async (config, verificationData) => {
-	const client = new OAuth2Client(config.clientId);
-	const ticket = await client.verifyIdToken({
-		idToken: verificationData.credential,
-		audience: config.clientId,
-	});
-	const payload = ticket.getPayload();
+	const res = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${verificationData.credential}`);
+	const payload = await res.json();
+	if (payload.aud !== config.clientId) return { success: false, error: 'Invalid aud' };
 	return payload.email ? { success: true, email: payload.email } : { success: false, error: 'Email not found' };
 };
 
@@ -19,10 +13,15 @@ export const verifySigninMeta = async (config, verificationData) => {
 
 export const verifySigninApple = async (config, verificationData) => {
 	const { id_token } = verificationData;
-	const result = await appleSigninAuth.verifyIdToken(id_token, {
-		audience: config.clientId,
-		ignoreExpiration: true,
+	const form = new FormData();
+	form.append('id_token', id_token);
+	form.append('client_id', config.clientId);
+	const res = await fetch('https://appleid.apple.com/auth/verify', {
+		method: 'POST',
+		body: form,
 	});
+	const result = await res.json();
+	if (!result.success) return { success: false, error: result.error || 'Invalid Apple signin' };
 	return result.email ? { success: true, email: result.email } : { success: false, error: 'Email not available from Apple' };
 };
 
