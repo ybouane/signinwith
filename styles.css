@@ -34,12 +34,12 @@
 		}
 	
 		&.signinwith-button-facebook {
-			background-color: #1877F2;
+			background-color: #0866ff;
 			color: white;
-			border-color: #1877F2;
+			border-color: #0866ff;
 	
 			&:hover {
-				background-color: #1877F2;
+				background-color: #0866ff;
 			}
 		}
 
