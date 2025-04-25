@@ -8,7 +8,8 @@
 	"type": "module",
 	"exports": {
 		".": "./index.js",
-		"./react": "./react.jsx"
+		"./react": "./react.jsx",
+		"./styles.css": "./styles.css"
 	},
 	"keywords": [
 		"signinwith",
