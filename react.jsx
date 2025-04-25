@@ -33,10 +33,12 @@ export function SignInWithMeta({ service, onSignin }) {
 		}
 	}, [service.appId]);
 
-	const handleLogin = () => {
+	const handleLogin = (e) => {
+		e.stopPropagation();
+		e.preventDefault();
 		window.FB.login(function (response) {
 			if (response.authResponse) {
-				onSignin('meta', { accessToken: response.authResponse.accessToken });
+				onSignin('facebook', { accessToken: response.authResponse.accessToken });
 			}
 		}, { scope: 'email,public_profile' });
 	};
@@ -68,13 +70,9 @@ export function SignInWithGoogle({ service, onSignin }) {
 		};
 	}, [service.clientId]);
 
-	const handleGoogleLogin = () => {
-		window.google.accounts.id.requestCredential({
-			clientId: service.clientId,
-			callback: (res) => {
-				onSignin('google', { credential: res.credential });
-			},
-			scopes: ['email', 'profile']
+	const handleGoogleLogin = (e) => {
+		e.stopPropagation();
+		e.preventDefault();
 		});
 	};
 
@@ -103,8 +101,12 @@ export function SignInWithApple({ service, onSignin }) {
 		};
 		document.body.appendChild(script);
 	}, [service.clientId]);
-
-	return <button className="signinwith-button signinwith-button-apple" onClick={() => window.AppleID.auth.signIn()}><AppleIcon />Continue with Apple</button>;
+	const handleAppleLogin = (e) => {
+		e.stopPropagation();
+		e.preventDefault();
+		window.AppleID.auth.signIn();
+	};
+	return <button className="signinwith-button signinwith-button-apple" onClick={handleAppleLogin}><AppleIcon />Continue with Apple</button>;
 }
 
 // Main SignInWith Component
