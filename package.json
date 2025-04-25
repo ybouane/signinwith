@@ -1,6 +1,6 @@
 {
 	"name": "signinwith",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"description": "Simple and straightforward library for sign in / sign up with thirdparty oAuth services like Google, Meta, Apple, Discord...",
 	"main": "index.js",
 	"scripts": {
@@ -9,7 +9,8 @@
 	"exports": {
 		".": "./index.js",
 		"./react": "./react.jsx",
-		"./styles.css": "./styles.css"
+		"./styles.css": "./styles.css",
+		"./redirect-oauth.html": "./redirect-oauth.html"
 	},
 	"keywords": [
 		"signinwith",
