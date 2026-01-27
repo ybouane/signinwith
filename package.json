@@ -1,6 +1,6 @@
 {
 	"name": "signinwith",
-	"version": "1.0.12",
+	"version": "1.1.0",
 	"description": "Simple and straightforward library for sign in / sign up with thirdparty oAuth services like Google, Facebook, Apple, Discord...",
 	"main": "index.js",
 	"scripts": {
