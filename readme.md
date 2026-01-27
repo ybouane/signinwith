@@ -244,44 +244,55 @@ For Discord, GitHub, and Apple, the `redirectUri` in the frontend configuration 
 <div class="container">
 	<p>You can close this window now.</p>
 	<script>
-		(function handleOauthResult(){
-			const urlParams = new URLSearchParams(window.location.search);
-			const code = urlParams.get('code');
-			const error = urlParams.get('error');
-			const state = urlParams.get('state');
-			const serviceParam = urlParams.get('service') || urlParams.get('provider');
-			const defaultService = window.opener && window.opener.__signinwithPendingProvider ? window.opener.__signinwithPendingProvider : null;
-			const fallbackState = window.opener && window.opener.__signinwithPendingProviderState ? window.opener.__signinwithPendingProviderState : null;
-			let service = serviceParam || defaultService || (state || '').replace(/^.*:/, '') || 'discord';
-			if (!service) service = 'discord';
+	(function handleOauthResult(){
+		const urlParams = new URLSearchParams(window.location.search);
+		const code = urlParams.get('code');
+		const error = urlParams.get('error');
+		const state = urlParams.get('state');
+		const serviceParam = urlParams.get('service') || urlParams.get('provider');
+		const defaultService = window.opener && window.opener.__signinwithPendingProvider ? window.opener.__signinwithPendingProvider : null;
+		const fallbackState = window.opener && window.opener.__signinwithPendingProviderState ? window.opener.__signinwithPendingProviderState : null;
+		let service = serviceParam || defaultService || (state || '').replace(/^.*:/, '') || 'discord';
+		if (!service) service = 'discord';
 
-			const message = {
-				type: `${service}Auth`,
-				service,
-			};
-			if (code) message.code = code;
-			if (state || fallbackState) message.state = state || fallbackState;
-			if (error) message.error = error;
+		const message = {
+			type: `${service}Auth`,
+			service,
+		};
+		if (code) message.code = code;
+		if (state || fallbackState) message.state = state || fallbackState;
+		if (error) message.error = error;
 
+		const channelName = `signinwith-${service}`;
+		if (typeof BroadcastChannel !== 'undefined') {
+			try {
+				const channel = new BroadcastChannel(channelName);
+				channel.postMessage(message);
+				channel.close();
+			} catch (err) {
+				console.error('Failed to broadcast OAuth result', err);
+			}
+		} else {
 			const target = window.opener || window.parent;
 			if (target && typeof target.postMessage === 'function') {
 				target.postMessage(message, window.location.origin);
 			}
+		}
 
-			// Attempt to close the window
-			setTimeout(() => {
-				window.close();
-			}, 0);
-		})();
+		// Attempt to close the window
+		setTimeout(() => {
+			window.close();
+		}, 0);
+	})();
 	</script>
 </div>
 </body>
 </html>
 ```
 
-This HTML file extracts the authorization code (or error) from the URL hash and sends it back to the main window using `postMessage`.  The main application needs to listen for this message and then proceed with the backend verification.  This approach is necessary because Discord's OAuth flow, when initiated in a popup, requires a way to pass the authorization code back to the originating window.
+This HTML file extracts the authorization code (or error) from the URL hash and sends it back to the main window using `BroadcastChannel` (falling back to `postMessage` when unavailable).  The main application needs to listen for this message and then proceed with the backend verification.  This approach is necessary because Discord's OAuth flow, when initiated in a popup, requires a way to pass the authorization code back to the originating window.
 
-The helper page automatically infers the provider name (Discord, GitHub, etc.) based on the pending popup initiation, so you can re-use the same redirect page for every provider that relies on a popup + code flow.
+The helper page uses the `BroadcastChannel` API to publish the OAuth result back to the main window and automatically infers the provider name (Discord, GitHub, etc.) based on the pending popup initiation, so you can re-use the same redirect page for every provider that relies on a popup + code flow.
 
 Note: you can import this page as a string (to then return it as a response from your server) via:
 ```javascript

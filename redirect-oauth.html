@@ -24,37 +24,48 @@
 <body>
 	<div class="container">
 		<p>You can close this window now.</p>
-		<script>
-			(function handleOauthResult(){
-				const urlParams = new URLSearchParams(window.location.search);
-				const code = urlParams.get('code');
-				const error = urlParams.get('error');
-				const state = urlParams.get('state');
-				const serviceParam = urlParams.get('service') || urlParams.get('provider');
-				const defaultService = window.opener && window.opener.__signinwithPendingProvider ? window.opener.__signinwithPendingProvider : null;
-				const fallbackState = window.opener && window.opener.__signinwithPendingProviderState ? window.opener.__signinwithPendingProviderState : null;
-				let service = serviceParam || defaultService || (state || '').replace(/^.*:/, '') || 'discord';
-				if (!service) service = 'discord';
+			<script>
+				(function handleOauthResult() {
+					const urlParams = new URLSearchParams(window.location.search);
+					const code = urlParams.get('code');
+					const error = urlParams.get('error');
+					const state = urlParams.get('state');
+					const serviceParam = urlParams.get('service') || urlParams.get('provider');
+					const defaultService = window.opener && window.opener.__signinwithPendingProvider ? window.opener.__signinwithPendingProvider : null;
+					const fallbackState = window.opener && window.opener.__signinwithPendingProviderState ? window.opener.__signinwithPendingProviderState : null;
+					let service = serviceParam || defaultService || (state || '').replace(/^.*:/, '') || 'discord';
+					if (!service) service = 'discord';
 
-				const message = {
-					type: `${service}Auth`,
-					service,
-				};
-				if (code) message.code = code;
-				if (state || fallbackState) message.state = state || fallbackState;
-				if (error) message.error = error;
+					const message = {
+						type: `${service}Auth`,
+						service,
+					};
+					if (code) message.code = code;
+					if (state || fallbackState) message.state = state || fallbackState;
+					if (error) message.error = error;
 
-				const target = window.opener || window.parent;
-				if (target && typeof target.postMessage === 'function') {
-					target.postMessage(message, window.location.origin);
-				}
+					const channelName = `signinwith-${service}`;
+					if (typeof BroadcastChannel !== 'undefined') {
+						try {
+							const channel = new BroadcastChannel(channelName);
+							channel.postMessage(message);
+							channel.close();
+						} catch (err) {
+							console.error('Failed to broadcast OAuth result', err);
+						}
+					} else {
+						const target = window.opener || window.parent;
+						if (target && typeof target.postMessage === 'function') {
+							target.postMessage(message, window.location.origin);
+						}
+					}
 
-				// Attempt to close the window
-				setTimeout(() => {
-					window.close();
-				}, 0);
-			})();
-		</script>
+					// Attempt to close the window
+					setTimeout(() => {
+						window.close();
+					}, 0);
+				})();
+			</script>
 	</div>
 </body>
 </html>

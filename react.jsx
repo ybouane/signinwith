@@ -217,6 +217,41 @@ export function SignInWithApple({ service, onSignin, onError }) {
 // Subcomponent: Discord
 export function SignInWithDiscord({ service, onSignin, onError }) {
 	const popupRef = useRef(null);
+
+	useEffect(() => {
+		if (typeof BroadcastChannel === 'undefined') {
+			console.warn('BroadcastChannel is not supported in this browser. Discord login will not work.');
+			return;
+		}
+
+		const channel = new BroadcastChannel('signinwith-discord');
+		const handleChannelMessage = (event) => {
+			const data = event.data;
+			if (!data || data.service !== 'discord') return;
+
+			if (data.code) {
+				onSignin('discord', { code: data.code, state: data.state });
+			} else if (data.error) {
+				onError?.(`Discord login error: ${data.error}`);
+			} else {
+				onError?.('Unknown Discord login error.');
+			}
+
+			if (popupRef.current && !popupRef.current.closed) {
+				popupRef.current.close();
+			}
+			window.__signinwithPendingProvider = null;
+			window.__signinwithPendingProviderState = null;
+		};
+
+		channel.addEventListener('message', handleChannelMessage);
+
+		return () => {
+			channel.removeEventListener('message', handleChannelMessage);
+			channel.close();
+		};
+	}, [onSignin, onError]);
+
 	const handleDiscordLogin = (e) => {
 		e.stopPropagation();
 		e.preventDefault();
@@ -233,6 +268,11 @@ export function SignInWithDiscord({ service, onSignin, onError }) {
 		if (!clientId || !redirectUri) {
 			console.error("Discord service configuration missing clientId or redirectUri.");
 			onError?.("Discord configuration is incomplete.");
+			return;
+		}
+
+		if (typeof BroadcastChannel === 'undefined') {
+			onError?.('BroadcastChannel API is not available in this browser.');
 			return;
 		}
 
@@ -255,31 +295,6 @@ export function SignInWithDiscord({ service, onSignin, onError }) {
 			onError?.("Failed to initiate Discord login.");
 		}
 	};
-	useEffect(() => {
-		const handleMessage = (event) => {
-			if (event.origin !== window.location.origin) {
-				return; // Only accept messages from the same origin
-			}
-			if (event.data && (event.data.type === 'discordAuth' || event.data.service === 'discord')) {
-				if (event.data.code) {
-					onSignin('discord', { code: event.data.code, state: event.data.state });
-				} else if (event.data.error) {
-					onError?.(`Discord login error: ${event.data.error}`);
-				} else {
-					onError?.('Unknown Discord login error.');
-				}
-				if (popupRef.current && !popupRef.current.closed) {
-					popupRef.current.close();
-				}
-				window.__signinwithPendingProvider = null;
-				window.__signinwithPendingProviderState = null;
-			}
-		};
-		window.addEventListener('message', handleMessage);
-		return () => {
-			window.removeEventListener('message', handleMessage);
-		};
-	}, [onSignin, onError]);
 
 	return (
 		<button className="signinwith-button signinwith-button-discord" onClick={handleDiscordLogin}>
@@ -291,6 +306,41 @@ export function SignInWithDiscord({ service, onSignin, onError }) {
 // Subcomponent: GitHub
 export function SignInWithGithub({ service, onSignin, onError }) {
 	const popupRef = useRef(null);
+
+	useEffect(() => {
+		if (typeof BroadcastChannel === 'undefined') {
+			console.warn('BroadcastChannel is not supported in this browser. GitHub login will not work.');
+			return;
+		}
+
+		const channel = new BroadcastChannel('signinwith-github');
+		const handleChannelMessage = (event) => {
+			const data = event.data;
+			if (!data || data.service !== 'github') return;
+
+			if (data.code) {
+				onSignin('github', { code: data.code, state: data.state });
+			} else if (data.error) {
+				onError?.(`GitHub login error: ${data.error}`);
+			} else {
+				onError?.('Unknown GitHub login error.');
+			}
+
+			if (popupRef.current && !popupRef.current.closed) {
+				popupRef.current.close();
+			}
+			window.__signinwithPendingProvider = null;
+			window.__signinwithPendingProviderState = null;
+		};
+
+		channel.addEventListener('message', handleChannelMessage);
+
+		return () => {
+			channel.removeEventListener('message', handleChannelMessage);
+			channel.close();
+		};
+	}, [onSignin, onError]);
+
 	const handleGithubLogin = (e) => {
 		e.stopPropagation();
 		e.preventDefault();
@@ -309,6 +359,11 @@ export function SignInWithGithub({ service, onSignin, onError }) {
 
 		if (!clientId || !redirectUri) {
 			onError?.('GitHub configuration is incomplete.');
+			return;
+		}
+
+		if (typeof BroadcastChannel === 'undefined') {
+			onError?.('BroadcastChannel API is not available in this browser.');
 			return;
 		}
 
@@ -338,32 +393,6 @@ export function SignInWithGithub({ service, onSignin, onError }) {
 			onError?.("Failed to initiate GitHub login.");
 		}
 	};
-
-	useEffect(() => {
-		const handleMessage = (event) => {
-			if (event.origin !== window.location.origin) return;
-
-			if (event.data && (event.data.type === 'githubAuth' || event.data.service === 'github')) {
-				if (event.data.code) {
-					onSignin('github', { code: event.data.code, state: event.data.state });
-				} else if (event.data.error) {
-					onError?.(`GitHub login error: ${event.data.error}`);
-				} else {
-					onError?.('Unknown GitHub login error.');
-				}
-				if (popupRef.current && !popupRef.current.closed) {
-					popupRef.current.close();
-				}
-				window.__signinwithPendingProvider = null;
-				window.__signinwithPendingProviderState = null;
-			}
-		};
-
-		window.addEventListener('message', handleMessage);
-		return () => {
-			window.removeEventListener('message', handleMessage);
-		};
-	}, [onSignin, onError]);
 
 	return (
 		<button className="signinwith-button signinwith-button-github" onClick={handleGithubLogin}>
