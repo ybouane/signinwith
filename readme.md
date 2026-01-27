@@ -125,7 +125,6 @@ const servicesConfig = {
 		clientId: process.env.GITHUB_CLIENT_ID,
 		clientSecret: process.env.GITHUB_CLIENT_SECRET,
 		redirectUri: process.env.GITHUB_REDIRECT_URI,
-		userAgent: 'your-app-name',
 	},
 };
 
@@ -180,6 +179,7 @@ The buttons have the base class `signinwith-button` and provider-specific classe
 *   `signinwith-button-facebook`
 *   `signinwith-button-apple`
 *   `signinwith-button-discord`
+*   `signinwith-button-github`
 
 You can override these styles in your own CSS. The container in the example uses `signinwith-container` for layout.
 

@@ -79,7 +79,7 @@ export const verifySigninGithub = async (config, verificationData) => {
 	const apiHeaders = {
 		'Authorization': `Bearer ${accessToken}`,
 		'Accept': 'application/vnd.github+json',
-		'User-Agent': config.userAgent || 'signinwith',
+		'User-Agent': 'signinwith',
 	};
 
 	const profileRes = await fetch('https://api.github.com/user', { headers: apiHeaders });
