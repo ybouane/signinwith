@@ -4,7 +4,7 @@ A simple and straightforward library for adding "Sign in with..." buttons (Googl
 
 ## Features
 
-*   Easy integration for Google, Facebook (Meta), Apple, and Discord sign-in.
+*   Easy integration for Google, Facebook (Meta), Apple, Discord, and GitHub sign-in.
 *   React components for the frontend buttons.
 *   Backend utility functions to verify the identity tokens/access tokens.
 *   Basic customizable styling.
@@ -43,6 +43,11 @@ function App() {
 		discord: {
 			clientId: 'YOUR_DISCORD_CLIENT_ID',
 			redirectUri: '/redirect-oauth.html',
+		},
+		github: {
+			clientId: 'YOUR_GITHUB_OAUTH_APP_CLIENT_ID',
+			redirectUri: '/redirect-oauth.html',
+			scope: 'read:user user:email',
 		},
 	};
 
@@ -116,6 +121,12 @@ const servicesConfig = {
 		clientSecret: process.env.DISCORD_CLIENT_SECRET,
 		redirectUri: process.env.DISCORD_REDIRECT_URI,
 	},
+	github: {
+		clientId: process.env.GITHUB_CLIENT_ID,
+		clientSecret: process.env.GITHUB_CLIENT_SECRET,
+		redirectUri: process.env.GITHUB_REDIRECT_URI,
+		userAgent: 'your-app-name',
+	},
 };
 
 app.post('/api/auth/verify', async (req, res) => {
@@ -156,6 +167,7 @@ The main `verifySignin` function delegates to service-specific functions:
 *   `verifyFacebookToken(servicesConfig, data)`: Verifies the Facebook (Meta) access token by calling the Facebook Graph API. It checks if the token is valid and associated with your Facebook App.
 *   `verifyAppleToken(servicesConfig, data)`: Verifies the Apple authorization code.  It checks the code's validity and audience (client ID).  It may require additional configuration depending on your Apple Developer setup (e.g., private key).
 *   `verifyDiscordToken(servicesConfig, data)`: Exchanges the Discord authorization code for an access token, then uses the access token to fetch user information from the Discord API.  It verifies that the code is valid and associated with your Discord application.
+*   `verifyGithubToken(servicesConfig, data)`: Exchanges the GitHub authorization code for an access token, then fetches the user's primary or any verified email via the GitHub API. Requires the OAuth app's `clientId`, `clientSecret`, and `redirectUri`.
 
 Each of these functions returns a promise that resolves to an object with either a `success: true` and the user's `email`, or `success: false` and an `error` message.
 
@@ -194,16 +206,21 @@ You can override these styles in your own CSS. The container in the example uses
 		*   Set up OAuth2.
 		*   Add your redirect URI.
 		*   Get your **Client ID** and **Client Secret**.  Store the client secret securely on the backend.
+*   **GitHub:**
+		*   Create an OAuth App at [GitHub Developer Settings](https://github.com/settings/developers).
+		*   Set the Authorization callback URL to your hosted `redirect-oauth.html` (or any page that forwards the OAuth code to your frontend).
+		*   Copy the **Client ID** and **Client Secret**. Provide them to `verifySigninGithub` on the backend.
+		*   Optional: customize scopes (`read:user user:email` by default) or `allow_signup`/`state` via the React component configuration.
 
 ## Redirect URI (Popup)
 
-For Discord and Apple, the `redirectUri` in the frontend configuration should point to a static HTML file (e.g., `redirect-oauth.html`) that handles the OAuth2 code. This file facilitates communication between the popup window and the main application window. Place the following content to be the page that is set as the redirectUri:
+For Discord, GitHub, and Apple, the `redirectUri` in the frontend configuration should point to a static HTML file (e.g., `redirect-oauth.html`) that handles the OAuth2 code. This file facilitates communication between the popup window and the main application window. Place the following content to be the page that is set as the redirectUri:
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Discord Authentication</title>
+	<title>OAuth Authentication</title>
 	<style>
 	body {
 	  font-family: sans-serif;
@@ -227,20 +244,35 @@ For Discord and Apple, the `redirectUri` in the frontend configuration should po
 <div class="container">
 	<p>You can close this window now.</p>
 	<script>
-		const urlParams = new URLSearchParams(window.location.search);
-		const code = urlParams.get('code');
-		const error = urlParams.get('error');
+		(function handleOauthResult(){
+			const urlParams = new URLSearchParams(window.location.search);
+			const code = urlParams.get('code');
+			const error = urlParams.get('error');
+			const state = urlParams.get('state');
+			const serviceParam = urlParams.get('service') || urlParams.get('provider');
+			const defaultService = window.opener && window.opener.__signinwithPendingProvider ? window.opener.__signinwithPendingProvider : null;
+			const fallbackState = window.opener && window.opener.__signinwithPendingProviderState ? window.opener.__signinwithPendingProviderState : null;
+			let service = serviceParam || defaultService || (state || '').replace(/^.*:/, '') || 'discord';
+			if (!service) service = 'discord';
 
-		if (code) {
-			window.opener.postMessage({ type: 'discordAuth', code: code }, window.location.origin);
-		} else if(error) {
-			window.opener.postMessage({ type: 'oauthError', error: error }, window.location.origin);
-		}
+			const message = {
+				type: `${service}Auth`,
+				service,
+			};
+			if (code) message.code = code;
+			if (state || fallbackState) message.state = state || fallbackState;
+			if (error) message.error = error;
 
-		// Attempt to close the window
-		setTimeout(() => {
-			window.close();
-		}, 0);
+			const target = window.opener || window.parent;
+			if (target && typeof target.postMessage === 'function') {
+				target.postMessage(message, window.location.origin);
+			}
+
+			// Attempt to close the window
+			setTimeout(() => {
+				window.close();
+			}, 0);
+		})();
 	</script>
 </div>
 </body>
@@ -248,6 +280,8 @@ For Discord and Apple, the `redirectUri` in the frontend configuration should po
 ```
 
 This HTML file extracts the authorization code (or error) from the URL hash and sends it back to the main window using `postMessage`.  The main application needs to listen for this message and then proceed with the backend verification.  This approach is necessary because Discord's OAuth flow, when initiated in a popup, requires a way to pass the authorization code back to the originating window.
+
+The helper page automatically infers the provider name (Discord, GitHub, etc.) based on the pending popup initiation, so you can re-use the same redirect page for every provider that relies on a popup + code flow.
 
 Note: you can import this page as a string (to then return it as a response from your server) via:
 ```javascript

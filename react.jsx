@@ -17,6 +17,17 @@ const DiscordIcon = () => (
 	<svg viewBox="0 -28.5 256 256" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid"><path d="M216.856 16.597A208.502 208.502 0 0 0 164.042 0c-2.275 4.113-4.933 9.645-6.766 14.046-19.692-2.961-39.203-2.961-58.533 0-1.832-4.4-4.55-9.933-6.846-14.046a207.809 207.809 0 0 0-52.855 16.638C5.618 67.147-3.443 116.4 1.087 164.956c22.169 16.555 43.653 26.612 64.775 33.193A161.094 161.094 0 0 0 79.735 175.3a136.413 136.413 0 0 1-21.846-10.632 108.636 108.636 0 0 0 5.356-4.237c42.122 19.702 87.89 19.702 129.51 0a131.66 131.66 0 0 0 5.355 4.237 136.07 136.07 0 0 1-21.886 10.653c4.006 8.02 8.638 15.67 13.873 22.848 21.142-6.58 42.646-16.637 64.815-33.213 5.316-56.288-9.08-105.09-38.056-148.36ZM85.474 135.095c-12.645 0-23.015-11.805-23.015-26.18s10.149-26.2 23.015-26.2c12.867 0 23.236 11.804 23.015 26.2.02 14.375-10.148 26.18-23.015 26.18Zm85.051 0c-12.645 0-23.014-11.805-23.014-26.18s10.148-26.2 23.014-26.2c12.867 0 23.236 11.804 23.015 26.2 0 14.375-10.148 26.18-23.015 26.18Z" fill="#FFFFFF"/></svg>
 );
 
+const GithubIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+		<path
+			fill-rule="evenodd"
+			clip-rule="evenodd"
+			d="M12 0C5.37 0 0 5.42 0 12.108c0 5.354 3.438 9.892 8.205 11.496.6.115.82-.264.82-.585 0-.288-.01-1.049-.016-2.06-3.338.737-4.042-1.642-4.042-1.642-.547-1.412-1.336-1.788-1.336-1.788-1.09-.758.083-.743.083-.743 1.205.086 1.84 1.255 1.84 1.255 1.07 1.864 2.807 1.326 3.492 1.015.108-.793.42-1.326.763-1.63-2.665-.31-5.466-1.366-5.466-6.075 0-1.342.465-2.44 1.232-3.3-.124-.311-.535-1.565.118-3.263 0 0 1.007-.33 3.3 1.26a11.23 11.23 0 0 1 3.004-.41c1.02.004 2.047.14 3.004.41 2.29-1.59 3.296-1.26 3.296-1.26.655 1.698.244 2.952.12 3.263.77.86 1.23 1.958 1.23 3.3 0 4.724-2.807 5.76-5.48 6.064.43.379.823 1.126.823 2.27 0 1.64-.015 2.96-.015 3.363 0 .324.216.704.826.583C20.565 22 24 17.46 24 12.108 24 5.42 18.627 0 12 0Z"
+			fill="#FFFFFF"
+		/>
+	</svg>
+);
+
 // Subcomponent: Facebook
 export function SignInWithFacebook({ service, onSignin, onError }) {
 	useEffect(() => {
@@ -205,11 +216,19 @@ export function SignInWithApple({ service, onSignin, onError }) {
 
 // Subcomponent: Discord
 export function SignInWithDiscord({ service, onSignin, onError }) {
+	const popupRef = useRef(null);
 	const handleDiscordLogin = (e) => {
 		e.stopPropagation();
 		e.preventDefault();
 
-		const { clientId, redirectUri, scope = 'identify email' } = service; // Default scopes
+		const {
+			clientId,
+			redirectUri,
+			scope = 'identify email',
+			state = 'discord',
+			prompt = 'consent',
+			popupFeatures = 'width=500,height=700',
+		} = service; // Default scopes
 
 		if (!clientId || !redirectUri) {
 			console.error("Discord service configuration missing clientId or redirectUri.");
@@ -223,11 +242,14 @@ export function SignInWithDiscord({ service, onSignin, onError }) {
 				redirect_uri: redirectUri,
 				response_type: 'code',
 				scope: scope,
+				state,
 			});
+			if (prompt) params.append('prompt', prompt);
 
 			const discordAuthUrl = `https://discord.com/api/oauth2/authorize?${params.toString()}`;
-
-			window.open(discordAuthUrl);
+			window.__signinwithPendingProvider = 'discord';
+			window.__signinwithPendingProviderState = state;
+			popupRef.current = window.open(discordAuthUrl, '_blank', popupFeatures);
 		} catch (error) {
 			console.error("Failed to initiate Discord login:", error);
 			onError?.("Failed to initiate Discord login.");
@@ -238,14 +260,19 @@ export function SignInWithDiscord({ service, onSignin, onError }) {
 			if (event.origin !== window.location.origin) {
 				return; // Only accept messages from the same origin
 			}
-			if (event.data && event.data.type === 'discordAuth') {
+			if (event.data && (event.data.type === 'discordAuth' || event.data.service === 'discord')) {
 				if (event.data.code) {
-					onSignin('discord', { code: event.data.code });
+					onSignin('discord', { code: event.data.code, state: event.data.state });
 				} else if (event.data.error) {
 					onError?.(`Discord login error: ${event.data.error}`);
 				} else {
 					onError?.('Unknown Discord login error.');
 				}
+				if (popupRef.current && !popupRef.current.closed) {
+					popupRef.current.close();
+				}
+				window.__signinwithPendingProvider = null;
+				window.__signinwithPendingProviderState = null;
 			}
 		};
 		window.addEventListener('message', handleMessage);
@@ -257,6 +284,90 @@ export function SignInWithDiscord({ service, onSignin, onError }) {
 	return (
 		<button className="signinwith-button signinwith-button-discord" onClick={handleDiscordLogin}>
 			<DiscordIcon />Continue with Discord
+		</button>
+	);
+}
+
+// Subcomponent: GitHub
+export function SignInWithGithub({ service, onSignin, onError }) {
+	const popupRef = useRef(null);
+	const handleGithubLogin = (e) => {
+		e.stopPropagation();
+		e.preventDefault();
+
+		const {
+			clientId,
+			redirectUri,
+			scope = 'read:user user:email',
+			state = 'github',
+			allowSignup = true,
+			popupFeatures = 'width=500,height=700',
+			codeChallenge,
+			codeChallengeMethod,
+			login,
+		} = service || {};
+
+		if (!clientId || !redirectUri) {
+			onError?.('GitHub configuration is incomplete.');
+			return;
+		}
+
+		try {
+			const params = new URLSearchParams({
+				client_id: clientId,
+				redirect_uri: redirectUri,
+				response_type: 'code',
+				scope,
+				state,
+				allow_signup: allowSignup ? 'true' : 'false',
+			});
+			if (login) params.append('login', login);
+			if (codeChallenge) {
+				params.append('code_challenge', codeChallenge);
+				if (codeChallengeMethod) {
+					params.append('code_challenge_method', codeChallengeMethod);
+				}
+			}
+
+			const githubAuthUrl = `https://github.com/login/oauth/authorize?${params.toString()}`;
+			window.__signinwithPendingProvider = 'github';
+			window.__signinwithPendingProviderState = state;
+			popupRef.current = window.open(githubAuthUrl, '_blank', popupFeatures);
+		} catch (error) {
+			console.error("Failed to initiate GitHub login:", error);
+			onError?.("Failed to initiate GitHub login.");
+		}
+	};
+
+	useEffect(() => {
+		const handleMessage = (event) => {
+			if (event.origin !== window.location.origin) return;
+
+			if (event.data && (event.data.type === 'githubAuth' || event.data.service === 'github')) {
+				if (event.data.code) {
+					onSignin('github', { code: event.data.code, state: event.data.state });
+				} else if (event.data.error) {
+					onError?.(`GitHub login error: ${event.data.error}`);
+				} else {
+					onError?.('Unknown GitHub login error.');
+				}
+				if (popupRef.current && !popupRef.current.closed) {
+					popupRef.current.close();
+				}
+				window.__signinwithPendingProvider = null;
+				window.__signinwithPendingProviderState = null;
+			}
+		};
+
+		window.addEventListener('message', handleMessage);
+		return () => {
+			window.removeEventListener('message', handleMessage);
+		};
+	}, [onSignin, onError]);
+
+	return (
+		<button className="signinwith-button signinwith-button-github" onClick={handleGithubLogin}>
+			<GithubIcon />Continue with GitHub
 		</button>
 	);
 }
@@ -278,6 +389,8 @@ export default function SignInWith({ onSignin, onError, services, theme = 'light
 						return <SignInWithApple key={key} service={config} onSignin={onSignin} onError={onError} />;
 					case 'discord':
 						return <SignInWithDiscord key={key} service={config} onSignin={onSignin} onError={onError} />;
+					case 'github':
+						return <SignInWithGithub key={key} service={config} onSignin={onSignin} onError={onError} />;
 					default:
 						console.warn(`Unsupported service key: ${key}`);
 						return null;

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Discord Authentication</title>
+	<title>OAuth Authentication</title>
 	<style>
 		body {
 			font-family: sans-serif;
@@ -25,20 +25,35 @@
 	<div class="container">
 		<p>You can close this window now.</p>
 		<script>
-			const urlParams = new URLSearchParams(window.location.search);
-			const code = urlParams.get('code');
-			const error = urlParams.get('error');
+			(function handleOauthResult(){
+				const urlParams = new URLSearchParams(window.location.search);
+				const code = urlParams.get('code');
+				const error = urlParams.get('error');
+				const state = urlParams.get('state');
+				const serviceParam = urlParams.get('service') || urlParams.get('provider');
+				const defaultService = window.opener && window.opener.__signinwithPendingProvider ? window.opener.__signinwithPendingProvider : null;
+				const fallbackState = window.opener && window.opener.__signinwithPendingProviderState ? window.opener.__signinwithPendingProviderState : null;
+				let service = serviceParam || defaultService || (state || '').replace(/^.*:/, '') || 'discord';
+				if (!service) service = 'discord';
 
-			if (code) {
-				window.opener.postMessage({ type: 'discordAuth', code: code }, window.location.origin);
-			} else if(error) {
-				window.opener.postMessage({ type: 'oauthError', error: error }, window.location.origin);
-			}
+				const message = {
+					type: `${service}Auth`,
+					service,
+				};
+				if (code) message.code = code;
+				if (state || fallbackState) message.state = state || fallbackState;
+				if (error) message.error = error;
 
-			// Attempt to close the window
-			setTimeout(() => {
-				window.close();
-			}, 0);
+				const target = window.opener || window.parent;
+				if (target && typeof target.postMessage === 'function') {
+					target.postMessage(message, window.location.origin);
+				}
+
+				// Attempt to close the window
+				setTimeout(() => {
+					window.close();
+				}, 0);
+			})();
 		</script>
 	</div>
 </body>

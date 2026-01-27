@@ -57,9 +57,19 @@
 			background-color: #000000;
 			color: white;
 			border-color: #000000;
-	
+
 			&:hover {
 				background-color: #333333;
+			}
+		}
+
+		&.signinwith-button-github {
+			background-color: #24292f;
+			color: white;
+			border-color: #24292f;
+
+			&:hover {
+				background-color: #1b1f23;
 			}
 		}
 	}
