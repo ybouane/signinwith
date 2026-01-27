@@ -32,7 +32,7 @@ function App() {
 		google: {
 			clientId: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
 		},
-		meta: {
+		facebook: {
 			appId: 'YOUR_FACEBOOK_APP_ID',
 		},
 		apple: {
@@ -79,7 +79,7 @@ export default App;
 
 ### Props for `SignInWith`
 
-*   `services` (Object, required): An object where keys are the service names (`google`, `meta`, `apple`, `discord`) and values are their respective configuration objects.
+*   `services` (Object, required): An object where keys are the service names (`google`, `facebook`, `apple`, `discord`, `github`) and values are their respective configuration objects.
 *   `onSignin` (Function, required): A callback function that receives `(serviceName, data)` when a sign-in attempt is successful on the client-side. `data` contains the necessary information (e.g., `credential` for Google, `accessToken` for Facebook/Discord, `authorization` object for Apple) to be sent to your backend for verification.
 *   `onError` (Function, optional): A callback function that receives an error string if there's an issue during the sign-in process.
 
@@ -153,7 +153,7 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 The main `verifySignin` function delegates to service-specific functions:
 
 *   `verifyGoogleToken(servicesConfig, data)`: Verifies the Google ID token against Google's servers.  It checks the token's signature, expiration, and audience (client ID).
-*   `verifyMetaToken(servicesConfig, data)`: Verifies the Meta (Facebook) access token by calling the Facebook Graph API. It checks if the token is valid and associated with your Facebook App.
+*   `verifyFacebookToken(servicesConfig, data)`: Verifies the Facebook (Meta) access token by calling the Facebook Graph API. It checks if the token is valid and associated with your Facebook App.
 *   `verifyAppleToken(servicesConfig, data)`: Verifies the Apple authorization code.  It checks the code's validity and audience (client ID).  It may require additional configuration depending on your Apple Developer setup (e.g., private key).
 *   `verifyDiscordToken(servicesConfig, data)`: Exchanges the Discord authorization code for an access token, then uses the access token to fetch user information from the Discord API.  It verifies that the code is valid and associated with your Discord application.
 
@@ -165,7 +165,7 @@ Basic styles are provided in `signinwith/styles.css`. You can import this file d
 
 The buttons have the base class `signinwith-button` and provider-specific classes:
 *   `signinwith-button-google` (Note: Google button uses `renderButton`, styling might be limited)
-*   `signinwith-button-meta`
+*   `signinwith-button-facebook`
 *   `signinwith-button-apple`
 *   `signinwith-button-discord`
 
