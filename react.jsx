@@ -68,69 +68,52 @@ export function SignInWithFacebook({ service, onSignin, onError }) {
 
 // Subcomponent: Google
 export function SignInWithGoogle({ service, onSignin, onError }) {
+	const codeClientRef = useRef(null);
+
 	useEffect(() => {
-		const scriptId = 'google-gsi-script';
+		const scriptId = "google-gsi-script";
 		let script = document.getElementById(scriptId);
 
-		if (!script) {
-			script = document.createElement('script');
-			script.id = scriptId;
-			script.src = 'https://accounts.google.com/gsi/client';
-			script.async = true;
-			script.defer = true;
-			script.onload = () => {
-				if (window.google?.accounts?.id) {
-					window.google.accounts.id.initialize({
-						client_id: service.clientId,
-						use_fedcm_for_prompt: true,
-						callback: (res) => {
-							onSignin('google', { credential: res.credential });
-						}
-					});
-				} else {
-					onError?.('Google Sign-In script loaded but initialization failed.');
-				}
-			};
-			script.onerror = () => {
-				onError?.('Failed to load Google Sign-In script.');
-			};
-			document.body.appendChild(script);
-		} else if (window.google?.accounts?.id) {
-			// If script already exists, ensure it's initialized (might be needed if component remounts)
-			window.google.accounts.id.initialize({
+		const init = () => {
+			if (!window.google?.accounts?.oauth2) {
+				onError?.("Google OAuth library not available.");
+				return;
+			}
+
+			codeClientRef.current = window.google.accounts.oauth2.initCodeClient({
 				client_id: service.clientId,
-				use_fedcm_for_prompt: true,
+				scope: "openid email profile",
+				ux_mode: "popup",
 				callback: (res) => {
-					onSignin('google', { credential: res.credential });
+					// res.code is the authorization code (send to backend)
+					if (!res?.code) return onError?.("No auth code received from Google.");
+					onSignin("google", { code: res.code });
+				},
+				error_callback: (err) => {
+					onError?.(err?.message || "Google sign-in failed.");
 				}
 			});
-		}
-
-
-		// Cleanup function does not remove the script to allow multiple instances
-		// or remounts without reloading. Google's script handles this internally.
-		return () => {
-			// Optional: You might want to hide the prompt if the component unmounts
-			// window.google?.accounts?.id?.cancel();
 		};
+
+		if (!script) {
+			script = document.createElement("script");
+			script.id = scriptId;
+			script.src = "https://accounts.google.com/gsi/client";
+			script.async = true;
+			script.defer = true;
+			script.onload = init;
+			script.onerror = () => onError?.("Failed to load Google script.");
+			document.body.appendChild(script);
+		} else {
+			init();
+		}
 	}, [service.clientId, onSignin, onError]);
 
 	const handleGoogleLogin = (e) => {
-		e.stopPropagation();
 		e.preventDefault();
-		if (window.google?.accounts?.id) {
-			window.google.accounts.id.prompt((notification) => {
-				// Handle prompt UI notifications (e.g., closed, error)
-				if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-					// Potentially trigger a backup UX or just log
-					onError?.(notification.getNotDisplayedReason() || notification.getSkippedReason() || 'Google Sign-In prompt was not displayed or was skipped.');
-				} else if (notification.isDismissedMoment()) {
-					onError?.(notification.getDismissedReason() || 'Google Sign-In prompt was dismissed.');
-				}
-			});
-		} else {
-			onError?.('Google Sign-In is not initialized.');
-		}
+		e.stopPropagation();
+		if (!codeClientRef.current) return onError?.("Google not initialized yet.");
+		codeClientRef.current.requestCode();
 	};
 
 	return (
