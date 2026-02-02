@@ -1,7 +1,7 @@
 export const verifySigninGoogle = async (config, verificationData) => {
-	const res = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${verificationData.credential}`);
+	const res = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${verificationData.code}`);
 	const payload = await res.json();
-	if (payload.aud !== config.clientId) return { success: false, error: 'Invalid aud' };
+	if (payload.aud !== config.clientId) return { success: false, error: 'Mismatch in clientID and "aud" value.' };
 	return payload.email ? { success: true, email: payload.email } : { success: false, error: 'Email not found' };
 };
 
