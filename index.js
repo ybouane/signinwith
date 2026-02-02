@@ -1,7 +1,37 @@
 export const verifySigninGoogle = async (config, verificationData) => {
-	const res = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${verificationData.code}`);
+	if (!verificationData?.code) return { success: false, error: 'Missing Google authorization code' };
+	if (!config?.clientId || !config?.clientSecret) return { success: false, error: 'Google clientId and clientSecret are required' };
+
+	const params = new URLSearchParams();
+	params.append('code', verificationData.code);
+	params.append('client_id', config.clientId);
+	params.append('client_secret', config.clientSecret);
+	params.append('redirect_uri', new URL(config.redirectUri || 'https://example.com').origin);
+	params.append('grant_type', 'authorization_code');
+
+	const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+		},
+		body: params,
+	});
+
+	const token = await tokenResponse.json();
+	if (!tokenResponse.ok || token.error) {
+		return { success: false, error: token.error_description || 'Failed to exchange Google code for token' };
+	}
+
+	const res = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${token.id_token}`);
 	const payload = await res.json();
-	if (payload.aud !== config.clientId) return { success: false, error: 'Mismatch in clientID and "aud" value.' };
+	
+	if (payload.error) {
+		return { success: false, error: payload.error_description || 'Invalid Google token' };
+	}
+	if (payload.aud !== config.clientId) {
+		return { success: false, error: 'Mismatch in clientID and "aud" value.' };
+	}
+	
 	return payload.email ? { success: true, email: payload.email } : { success: false, error: 'Email not found' };
 };
 

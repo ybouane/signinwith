@@ -31,6 +31,7 @@ function App() {
 	const services = {
 		google: {
 			clientId: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+			redirectUri: 'https://yourdomain.com/redirect-oauth.html', // Need to match your OAuth origin settings
 		},
 		facebook: {
 			appId: 'YOUR_FACEBOOK_APP_ID',
@@ -105,6 +106,8 @@ app.use(express.json());
 const servicesConfig = {
 	google: {
 		clientId: process.env.GOOGLE_CLIENT_ID,
+		clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+		redirectUri: 'https://yourdomain.com/redirect-oauth.html', // Need to match your OAuth origin settings
 	},
 	facebook: {
 		// Facebook verification only needs the access token from the frontend

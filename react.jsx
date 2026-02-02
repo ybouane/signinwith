@@ -84,6 +84,7 @@ export function SignInWithGoogle({ service, onSignin, onError }) {
 				client_id: service.clientId,
 				scope: "openid email profile",
 				ux_mode: "popup",
+				redirect_uri: service.redirectUri,
 				callback: (res) => {
 					// res.code is the authorization code (send to backend)
 					if (!res?.code) return onError?.("No auth code received from Google.");
